@@ -25,7 +25,12 @@ def sort_csv_files(directives_file):
         for file_pattern in files:
             for file_path in glob(file_pattern):
                 line_ending = get_line_ending(file_path)
-                df = pd.read_csv(file_path)
+                
+                try:
+                    df = pd.read_csv(file_path)
+                except pd.errors.ParserError as e:
+                    print(f"Error reading {file_path}: {e}")
+                    continue
                 
                 # Convert column indexes to names if specified as numbers
                 columns = df.columns
@@ -35,6 +40,13 @@ def sort_csv_files(directives_file):
                 ]
                 
                 sorted_df = df.sort_values(by=sort_columns_actual, ascending=sort_orders)
+
+                # Ensure the first column does not have any duplicate entries
+                first_column = sorted_df.columns[0]
+                duplicates = sorted_df[sorted_df.duplicated(subset=[first_column], keep=False)]
+                if not duplicates.empty:
+                    print(f"File: {file_path}")
+                    print(duplicates)
 
                 # Write the sorted DataFrame to a temporary file with the specified line ending
                 temp_file_path = file_path + '.tmp'
